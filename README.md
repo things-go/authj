@@ -2,7 +2,7 @@
 
 [![GoDoc](https://godoc.org/github.com/things-go/authj?status.svg)](https://godoc.org/github.com/things-go/authj)
 [![Go.Dev reference](https://img.shields.io/badge/go.dev-reference-blue?logo=go&logoColor=white)](https://pkg.go.dev/github.com/things-go/authj?tab=doc)
-[![Build Status](https://travis-ci.org/things-go/authj.svg)](https://travis-ci.org/things-go/authj)
+[![Build Status](https://travis-ci.com/things-go/authj.svg)](https://travis-ci.com/things-go/authj)
 [![codecov](https://codecov.io/gh/things-go/authj/branch/master/graph/badge.svg)](https://codecov.io/gh/things-go/authj)
 ![Action Status](https://github.com/things-go/authj/workflows/Go/badge.svg)
 [![Go Report Card](https://goreportcard.com/badge/github.com/things-go/authj)](https://goreportcard.com/report/github.com/things-go/authj)
