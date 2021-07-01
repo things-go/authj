@@ -13,9 +13,9 @@ import (
 // for defining context keys was copied from Go 1.7's new use of context in net/http.
 type ctxAuthKey struct{}
 
-// NewAuthorizer returns the authorizer
+// Authorizer returns the authorizer
 // uses a Casbin enforcer and Subject function as input
-func NewAuthorizer(e casbin.IEnforcer, subject func(c *gin.Context) string) gin.HandlerFunc {
+func Authorizer(e casbin.IEnforcer, subject func(c *gin.Context) string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// checks the userName,path,method permission combination from the request.
 		allowed, err := e.Enforce(subject(c), c.Request.URL.Path, c.Request.Method)
