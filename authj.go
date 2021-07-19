@@ -15,9 +15,9 @@ type ctxAuthKey struct{}
 
 // Config config for Authorizer
 type Config struct {
-	errFallback       func(c *gin.Context)
-	forbiddenFallback func(c *gin.Context)
-	subject           func(c *gin.Context) string
+	errFallback       func(*gin.Context, error)
+	forbiddenFallback func(*gin.Context)
+	subject           func(*gin.Context) string
 }
 
 // Option option
@@ -25,7 +25,7 @@ type Option func(*Config)
 
 // WithErrorFallback set the fallback handler when request are error happened.
 // default: the 500 server error to the client
-func WithErrorFallback(fn func(c *gin.Context)) Option {
+func WithErrorFallback(fn func(*gin.Context, error)) Option {
 	return func(cfg *Config) {
 		if fn != nil {
 			cfg.errFallback = fn
@@ -35,7 +35,7 @@ func WithErrorFallback(fn func(c *gin.Context)) Option {
 
 // WithForbiddenFallback set the fallback handler when request are not allow.
 // default: the 403 Forbidden to the client
-func WithForbiddenFallback(fn func(c *gin.Context)) Option {
+func WithForbiddenFallback(fn func(*gin.Context)) Option {
 	return func(cfg *Config) {
 		if fn != nil {
 			cfg.forbiddenFallback = fn
@@ -45,7 +45,7 @@ func WithForbiddenFallback(fn func(c *gin.Context)) Option {
 
 // WithSubject set the subject extractor of the requests.
 // default: Subject
-func WithSubject(fn func(c *gin.Context) string) Option {
+func WithSubject(fn func(*gin.Context) string) Option {
 	return func(cfg *Config) {
 		if fn != nil {
 			cfg.subject = fn
@@ -57,7 +57,7 @@ func WithSubject(fn func(c *gin.Context) string) Option {
 // uses a Casbin enforcer and Subject function as input
 func Authorizer(e casbin.IEnforcer, opts ...Option) gin.HandlerFunc {
 	cfg := Config{
-		func(c *gin.Context) {
+		func(c *gin.Context, err error) {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"code": http.StatusInternalServerError,
 				"msg":  "Permission validation errors occur!",
@@ -78,7 +78,7 @@ func Authorizer(e casbin.IEnforcer, opts ...Option) gin.HandlerFunc {
 		// checks the userName,path,method permission combination from the request.
 		allowed, err := e.Enforce(cfg.subject(c), c.Request.URL.Path, c.Request.Method)
 		if err != nil {
-			cfg.errFallback(c)
+			cfg.errFallback(c, err)
 			return
 		}
 		if !allowed {

@@ -80,7 +80,7 @@ func TestRBAC(t *testing.T) {
 	})
 	router.Use(Authorizer(e,
 		WithSubject(Subject),
-		WithErrorFallback(func(c *gin.Context) {
+		WithErrorFallback(func(c *gin.Context, err error) {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"code": http.StatusInternalServerError,
 				"msg":  "Permission validation errors occur!",
