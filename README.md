@@ -48,7 +48,7 @@ func main() {
 			// set context subject
 			authj.ContextWithSubject(c, "alice")
 		},
-		authj.Authorizer(e, authj.Subject),
+		authj.Authorizer(e),
 	)
 	router.GET("/dataset1/resource1", func(c *gin.Context) {
 		c.String(http.StatusOK, "alice own this resource")

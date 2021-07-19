@@ -9,8 +9,7 @@ import (
 )
 
 // contextKey is a value for use with context.WithValue. It's used as
-// a pointer so it fits in an interface{} without allocation. This technique
-// for defining context keys was copied from Go 1.7's new use of context in net/http.
+// a pointer so it fits in an interface{} without allocation.
 type ctxAuthKey struct{}
 
 // Config config for Authorizer
@@ -54,7 +53,7 @@ func WithSubject(fn func(*gin.Context) string) Option {
 }
 
 // Authorizer returns the authorizer
-// uses a Casbin enforcer and Subject function as input
+// uses a Casbin enforcer, and Subject as subject.
 func Authorizer(e casbin.IEnforcer, opts ...Option) gin.HandlerFunc {
 	cfg := Config{
 		func(c *gin.Context, err error) {
@@ -75,14 +74,13 @@ func Authorizer(e casbin.IEnforcer, opts ...Option) gin.HandlerFunc {
 		opt(&cfg)
 	}
 	return func(c *gin.Context) {
-		// checks the userName,path,method permission combination from the request.
+		// checks the subject,path,method permission combination from the request.
 		allowed, err := e.Enforce(cfg.subject(c), c.Request.URL.Path, c.Request.Method)
 		if err != nil {
 			cfg.errFallback(c, err)
 			return
 		}
 		if !allowed {
-			// the 403 Forbidden to the client
 			cfg.forbiddenFallback(c)
 			return
 		}
