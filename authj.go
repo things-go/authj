@@ -13,24 +13,77 @@ import (
 // for defining context keys was copied from Go 1.7's new use of context in net/http.
 type ctxAuthKey struct{}
 
+// Config config for Authorizer
+type Config struct {
+	errFallback       func(c *gin.Context)
+	forbiddenFallback func(c *gin.Context)
+	subject           func(c *gin.Context) string
+}
+
+// Option option
+type Option func(*Config)
+
+// WithErrorFallback set the fallback handler when request are error happened.
+// default: the 500 server error to the client
+func WithErrorFallback(fn func(c *gin.Context)) Option {
+	return func(cfg *Config) {
+		if fn != nil {
+			cfg.errFallback = fn
+		}
+	}
+}
+
+// WithForbiddenFallback set the fallback handler when request are not allow.
+// default: the 403 Forbidden to the client
+func WithForbiddenFallback(fn func(c *gin.Context)) Option {
+	return func(cfg *Config) {
+		if fn != nil {
+			cfg.forbiddenFallback = fn
+		}
+	}
+}
+
+// WithSubject set the subject extractor of the requests.
+// default: Subject
+func WithSubject(fn func(c *gin.Context) string) Option {
+	return func(cfg *Config) {
+		if fn != nil {
+			cfg.subject = fn
+		}
+	}
+}
+
 // Authorizer returns the authorizer
 // uses a Casbin enforcer and Subject function as input
-func Authorizer(e casbin.IEnforcer, subject func(c *gin.Context) string) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		// checks the userName,path,method permission combination from the request.
-		allowed, err := e.Enforce(subject(c), c.Request.URL.Path, c.Request.Method)
-		if err != nil {
+func Authorizer(e casbin.IEnforcer, opts ...Option) gin.HandlerFunc {
+	cfg := Config{
+		func(c *gin.Context) {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"code": http.StatusInternalServerError,
 				"msg":  "Permission validation errors occur!",
 			})
-			return
-		} else if !allowed {
-			// the 403 Forbidden to the client
+		},
+		func(c *gin.Context) {
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
 				"code": http.StatusForbidden,
 				"msg":  "Permission denied!",
 			})
+		},
+		Subject,
+	}
+	for _, opt := range opts {
+		opt(&cfg)
+	}
+	return func(c *gin.Context) {
+		// checks the userName,path,method permission combination from the request.
+		allowed, err := e.Enforce(cfg.subject(c), c.Request.URL.Path, c.Request.Method)
+		if err != nil {
+			cfg.errFallback(c)
+			return
+		}
+		if !allowed {
+			// the 403 Forbidden to the client
+			cfg.forbiddenFallback(c)
 			return
 		}
 		c.Next()

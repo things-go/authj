@@ -32,7 +32,7 @@ func TestBasic(t *testing.T) {
 	router.Use(func(context *gin.Context) {
 		ContextWithSubject(context, "alice")
 	})
-	router.Use(Authorizer(e, Subject))
+	router.Use(Authorizer(e, WithSubject(Subject)))
 	router.Any("/*anypath", func(c *gin.Context) {
 		c.Status(200)
 	})
@@ -50,7 +50,7 @@ func TestPathWildcard(t *testing.T) {
 	router.Use(func(context *gin.Context) {
 		ContextWithSubject(context, "bob")
 	})
-	router.Use(Authorizer(e, Subject))
+	router.Use(Authorizer(e, WithSubject(Subject)))
 
 	router.Any("/*anypath", func(c *gin.Context) {
 		c.Status(200)
@@ -78,7 +78,21 @@ func TestRBAC(t *testing.T) {
 	router.Use(func(context *gin.Context) {
 		ContextWithSubject(context, "cathy")
 	})
-	router.Use(Authorizer(e, Subject))
+	router.Use(Authorizer(e,
+		WithSubject(Subject),
+		WithErrorFallback(func(c *gin.Context) {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+				"code": http.StatusInternalServerError,
+				"msg":  "Permission validation errors occur!",
+			})
+		}),
+		WithForbiddenFallback(func(c *gin.Context) {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+				"code": http.StatusForbidden,
+				"msg":  "Permission denied!",
+			})
+		})),
+	)
 	router.Any("/*anypath", func(c *gin.Context) {
 		c.Status(200)
 	})
