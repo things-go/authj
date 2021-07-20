@@ -57,7 +57,6 @@ func main() {
 		c.String(http.StatusOK, "alice do not own this resource")
 	})
 	router.Run(":8080")
-
 }
 ```
 

@@ -115,3 +115,59 @@ func TestRBAC(t *testing.T) {
 	testAuthjRequest(t, router, "cathy", "/dataset2/item", "POST", 403)
 	testAuthjRequest(t, router, "cathy", "/dataset2/item", "DELETE", 403)
 }
+
+func TestSkipAuthentication(t *testing.T) {
+	router := gin.New()
+	e, _ := casbin.NewEnforcer("authj_model.conf", "authj_policy.csv")
+
+	router.Use(func(context *gin.Context) {
+		ContextWithSubject(context, "cathy")
+	})
+	router.Use(Authorizer(e,
+		WithSubject(Subject),
+		WithErrorFallback(func(c *gin.Context, err error) {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+				"code": http.StatusInternalServerError,
+				"msg":  "Permission validation errors occur!",
+			})
+		}),
+		WithForbiddenFallback(func(c *gin.Context) {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+				"code": http.StatusForbidden,
+				"msg":  "Permission denied!",
+			})
+		}),
+		WithSkipAuthentication(func(c *gin.Context) bool {
+			if c.Request.Method == http.MethodGet && c.Request.URL.Path == "/skip/authentication" {
+				return true
+			}
+			return false
+		}),
+	))
+
+	router.Any("/*anypath", func(c *gin.Context) {
+		c.Status(200)
+	})
+
+	// skip authentication
+	testAuthjRequest(t, router, "cathy", "/skip/authentication", "GET", 200)
+	testAuthjRequest(t, router, "cathy", "/skip/authentication", "POST", 403)
+
+	// cathy can access all /dataset1/* resources via all methods because it has the dataset1_admin role.
+	testAuthjRequest(t, router, "cathy", "/dataset1/item", "GET", 200)
+	testAuthjRequest(t, router, "cathy", "/dataset1/item", "POST", 200)
+	testAuthjRequest(t, router, "cathy", "/dataset1/item", "DELETE", 200)
+	testAuthjRequest(t, router, "cathy", "/dataset2/item", "GET", 403)
+	testAuthjRequest(t, router, "cathy", "/dataset2/item", "POST", 403)
+	testAuthjRequest(t, router, "cathy", "/dataset2/item", "DELETE", 403)
+
+	// delete all roles on user cathy, so cathy cannot access any resources now.
+	_, _ = e.DeleteRolesForUser("cathy")
+
+	testAuthjRequest(t, router, "cathy", "/dataset1/item", "GET", 403)
+	testAuthjRequest(t, router, "cathy", "/dataset1/item", "POST", 403)
+	testAuthjRequest(t, router, "cathy", "/dataset1/item", "DELETE", 403)
+	testAuthjRequest(t, router, "cathy", "/dataset2/item", "GET", 403)
+	testAuthjRequest(t, router, "cathy", "/dataset2/item", "POST", 403)
+	testAuthjRequest(t, router, "cathy", "/dataset2/item", "DELETE", 403)
+}

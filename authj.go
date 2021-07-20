@@ -14,9 +14,10 @@ type ctxAuthKey struct{}
 
 // Config config for Authorizer
 type Config struct {
-	errFallback       func(*gin.Context, error)
-	forbiddenFallback func(*gin.Context)
-	subject           func(*gin.Context) string
+	errFallback        func(*gin.Context, error)
+	forbiddenFallback  func(*gin.Context)
+	skipAuthentication func(*gin.Context) bool
+	subject            func(*gin.Context) string
 }
 
 // Option option
@@ -52,6 +53,16 @@ func WithSubject(fn func(*gin.Context) string) Option {
 	}
 }
 
+// WithSkipAuthentication set the skip approve when it is return true.
+// Default: always false
+func WithSkipAuthentication(fn func(*gin.Context) bool) Option {
+	return func(cfg *Config) {
+		if fn != nil {
+			cfg.skipAuthentication = fn
+		}
+	}
+}
+
 // Authorizer returns the authorizer
 // uses a Casbin enforcer, and Subject as subject.
 func Authorizer(e casbin.IEnforcer, opts ...Option) gin.HandlerFunc {
@@ -68,21 +79,24 @@ func Authorizer(e casbin.IEnforcer, opts ...Option) gin.HandlerFunc {
 				"msg":  "Permission denied!",
 			})
 		},
+		func(c *gin.Context) bool { return false },
 		Subject,
 	}
 	for _, opt := range opts {
 		opt(&cfg)
 	}
 	return func(c *gin.Context) {
-		// checks the subject,path,method permission combination from the request.
-		allowed, err := e.Enforce(cfg.subject(c), c.Request.URL.Path, c.Request.Method)
-		if err != nil {
-			cfg.errFallback(c, err)
-			return
-		}
-		if !allowed {
-			cfg.forbiddenFallback(c)
-			return
+		if !cfg.skipAuthentication(c) {
+			// checks the subject,path,method permission combination from the request.
+			allowed, err := e.Enforce(cfg.subject(c), c.Request.URL.Path, c.Request.Method)
+			if err != nil {
+				cfg.errFallback(c, err)
+				return
+			}
+			if !allowed {
+				cfg.forbiddenFallback(c)
+				return
+			}
 		}
 		c.Next()
 	}
