@@ -15,7 +15,7 @@ import (
 )
 
 func testAuthjRequest(t *testing.T, router http.Handler, user, path, method string, code int) {
-	r, _ := http.NewRequestWithContext(context.TODO(), method, path, nil)
+	r, _ := http.NewRequestWithContext(context.TODO(), method, path, http.NoBody)
 	r.SetBasicAuth(user, "123")
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, r)

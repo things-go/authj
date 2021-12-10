@@ -9,10 +9,10 @@ import (
 )
 
 // contextKey is a value for use with context.WithValue. It's used as
-// a pointer so it fits in an interface{} without allocation.
+// a pointer, so it fits in an interface{} without allocation.
 type ctxAuthKey struct{}
 
-// Config config for Authorizer
+// Config for Authorizer
 type Config struct {
 	errFallback        func(*gin.Context, error)
 	forbiddenFallback  func(*gin.Context)
@@ -20,7 +20,7 @@ type Config struct {
 	subject            func(*gin.Context) string
 }
 
-// Option option
+// Option config option
 type Option func(*Config)
 
 // WithErrorFallback set the fallback handler when request are error happened.
