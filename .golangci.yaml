@@ -72,7 +72,6 @@ linters:
   disable-all: true
   enable:
     - bodyclose
-    - deadcode
     - depguard
     - dogsled
     - errcheck
@@ -81,7 +80,6 @@ linters:
     - gocritic
     - gofmt
     - goimports
-    - revive
     - goprintffuncname
     - gosimple
     - govet
@@ -94,15 +92,17 @@ linters:
     - rowserrcheck
     - exportloopref
     - staticcheck
-    - structcheck
     - stylecheck
     - typecheck
     - unconvert
     - unparam
     - unused
-    - varcheck
     - whitespace
     - unparam
+#    - revive
+#    - structcheck
+#    - deadcode
+#    - varcheck
   #  - gosec
   #  - gomnd
   #  - gochecknoinits
