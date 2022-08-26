@@ -89,7 +89,7 @@ linters:
     - nakedret
     - noctx
     - nolintlint
-    - rowserrcheck
+#    - rowserrcheck
     - exportloopref
     - staticcheck
     - stylecheck
@@ -139,6 +139,10 @@ issues:
 run:
   skip-dirs:
     - .github
+  # Define the Go version limit.
+  # Mainly related to generics support since go1.18.
+  # Default: use Go version from the go.mod file, fallback on the env var `GOVERSION`, fallback on 1.18
+  go: '1.19'
 
 service:
   golangci-lint-version: 1.41.x # use the fixed version to not introduce new linters unexpectedly
